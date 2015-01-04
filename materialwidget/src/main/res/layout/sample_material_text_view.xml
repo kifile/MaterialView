@@ -1,0 +1,29 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.kifile.materialwidget.MaterialTextView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text="Text"
+        android:layout_weight="1"
+        app:maskColor="@android:color/black" />
+
+    <TextView
+        android:id="@+id/drawable"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:clickable="true"
+        android:background="?android:attr/selectableItemBackground"/>
+
+    <com.kifile.materialwidget.MaterialImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:src="@drawable/ic_launcher"
+        app:maskColor="#ff28dd3a" />
+
+</LinearLayout>

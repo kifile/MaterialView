@@ -1,0 +1,5 @@
+<resources>
+    <declare-styleable name="MaterialTextView">
+        <attr name="maskColor" format="color" />
+    </declare-styleable>
+</resources>
