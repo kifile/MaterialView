@@ -1,3 +1,19 @@
+/*
+ * Copyright [2015] [kifile]
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.kifile.materialwidget;
 
 import android.content.Context;
@@ -9,6 +25,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.Interpolator;
 
 import com.nineoldandroids.animation.Animator;
 import com.nineoldandroids.animation.ObjectAnimator;
@@ -23,10 +41,12 @@ public class MaterialBackgroundDetector {
 
     private static final int DEFAULT_DURATION = 1200;
     private static final int DEFAULT_FAST_DURATION = 300;
+    private static final int DEFAULT_TRANSPARENT_DURATION = 300;
+
+    private static final int DEFAULT_ALPHA = 33;
     public static final int DEFAULT_COLOR = Color.BLACK;
 
-    private Context mContext;
-    private View mView;
+    /*package*/ View mView;
     private int mColor;
     private Paint mCirclePaint;
     private int mFocusColor;
@@ -43,12 +63,35 @@ public class MaterialBackgroundDetector {
     private int mMinPadding;
 
     private ObjectAnimator mAnimator;
-    private int mDuration = DEFAULT_DURATION;
     /*package*/ boolean mIsAnimation;
     private boolean mIsFocused;
 
+    private Animator.AnimatorListener mAnimatorListener = new Animator.AnimatorListener() {
+        @Override
+        public void onAnimationStart(Animator animation) {
+            mIsAnimation = true;
+        }
+
+        @Override
+        public void onAnimationEnd(Animator animation) {
+            mIsAnimation = false;
+            mView.invalidate();
+        }
+
+        @Override
+        public void onAnimationCancel(Animator animation) {
+
+        }
+
+        @Override
+        public void onAnimationRepeat(Animator animation) {
+
+        }
+    };
+
+    private Interpolator mInterpolator = new AccelerateDecelerateInterpolator();
+
     public MaterialBackgroundDetector(Context context, View view, int color) {
-        mContext = context;
         mView = view;
         setColor(color);
         ViewConfiguration configuration = ViewConfiguration.get(context);
@@ -57,11 +100,11 @@ public class MaterialBackgroundDetector {
 
     private void setColor(int color) {
         if (mColor != color) {
+            if (DBG) {
+                Log.d(TAG, "ColorChanged");
+            }
             mColor = color;
-            mFocusColor = computeFocusColor(mColor);
-            mCircleColor = computeCircleColor(mColor);
-            resetPaint();
-            mView.invalidate();
+            setAlpha(DEFAULT_ALPHA);
         }
     }
 
@@ -72,12 +115,12 @@ public class MaterialBackgroundDetector {
         mCirclePaint.setColor(mCircleColor);
     }
 
-    private int computeCircleColor(int color) {
-        return ColorUtils.getColorAtAlpha(color, 33);
+    private int computeCircleColor(int color, int alpha) {
+        return ColorUtils.getColorAtAlpha(color, alpha);
     }
 
-    private int computeFocusColor(int color) {
-        return ColorUtils.getColorAtAlpha(color, 33);
+    private int computeFocusColor(int color, int alpha) {
+        return ColorUtils.getColorAtAlpha(color, alpha);
     }
 
     /**
@@ -100,33 +143,10 @@ public class MaterialBackgroundDetector {
                     mX = event.getX();
                     mY = event.getY();
                     mAnimator = ObjectAnimator.ofFloat(this, "radius", mMinPadding, mViewRadius);
+                    int mDuration = DEFAULT_DURATION;
                     mAnimator.setDuration(mDuration);
-                    mAnimator.setInterpolator(new AccelerateDecelerateInterpolator());
-                    mAnimator.addListener(new Animator.AnimatorListener() {
-                        @Override
-                        public void onAnimationStart(Animator animation) {
-                            mIsAnimation = true;
-                        }
-
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            if (DBG) {
-                                Log.d(TAG, "AnimationEnd");
-                            }
-                        }
-
-                        @Override
-                        public void onAnimationCancel(Animator animation) {
-                            if (DBG) {
-                                Log.d(TAG, "AnimationCancel");
-                            }
-                        }
-
-                        @Override
-                        public void onAnimationRepeat(Animator animation) {
-
-                        }
-                    });
+                    mAnimator.setInterpolator(mInterpolator);
+                    mAnimator.addListener(mAnimatorListener);
                     mAnimator.start();
                     if (DBG) {
                         Log.i(TAG, "Down,from:" + 0 + ",to:" + mViewRadius);
@@ -145,10 +165,22 @@ public class MaterialBackgroundDetector {
                 mY = mCenterY;
                 mRadius = Math.max(mRadius, mViewRadius * 0.1f);
                 int duration = (int) (DEFAULT_FAST_DURATION * (mViewRadius - mRadius) / mViewRadius);
-                mAnimator = ObjectAnimator.ofFloat(this, "radius", mRadius, mViewRadius);
-                mAnimator.setDuration(duration);
-                mAnimator.setInterpolator(new AccelerateDecelerateInterpolator());
-                mAnimator.addListener(new Animator.AnimatorListener() {
+                if (duration > 0) {
+                    //If duration > 0, means the circle is not full the view.
+                    mAnimator = ObjectAnimator.ofFloat(this, "radius", mRadius, mViewRadius);
+                    mAnimator.setDuration(duration);
+                    mAnimator.setInterpolator(mInterpolator);
+                    mAnimator.addListener(mAnimatorListener);
+                    mAnimator.start();
+                    if (DBG) {
+                        Log.i(TAG, "UP,from:" + mRadius + ",to:" + mViewRadius);
+                    }
+                }
+                //we should let the mask layer disappear gradually.
+                ObjectAnimator alphaAnimator = ObjectAnimator.ofInt(this, "alpha", DEFAULT_ALPHA, 0);
+                alphaAnimator.setDuration(DEFAULT_TRANSPARENT_DURATION);
+                alphaAnimator.setInterpolator(new AccelerateInterpolator());
+                alphaAnimator.addListener(new Animator.AnimatorListener() {
                     @Override
                     public void onAnimationStart(Animator animation) {
                         mIsAnimation = true;
@@ -157,6 +189,7 @@ public class MaterialBackgroundDetector {
                     @Override
                     public void onAnimationEnd(Animator animation) {
                         mIsAnimation = false;
+                        setAlpha(DEFAULT_ALPHA);
                     }
 
                     @Override
@@ -169,10 +202,8 @@ public class MaterialBackgroundDetector {
 
                     }
                 });
-                mAnimator.start();
-                if (DBG) {
-                    Log.i(TAG, "UP,from:" + mRadius + ",to:" + mViewRadius);
-                }
+                alphaAnimator.start();
+                mView.invalidate();
                 break;
         }
         return result;
@@ -186,16 +217,21 @@ public class MaterialBackgroundDetector {
 
     public void draw(Canvas canvas) {
         if (mIsFocused || mIsAnimation) {
+            //If client is focused or in animation, show focus layer.
             if (DBG) {
                 Log.d(TAG, "DrawFocusColor");
             }
             canvas.drawColor(mFocusColor);
-        }
-        if (mIsAnimation) {
             canvas.drawCircle(mCenterX, mCenterY, mRadius, mCirclePaint);
         }
     }
 
+    /**
+     * This method is called by ObjectAnimator to invalidate mView.
+     *
+     * @param radius
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public void setRadius(float radius) {
         float percent = 0;
         if (mAnimator != null) {
@@ -209,6 +245,18 @@ public class MaterialBackgroundDetector {
             mCenterX = mX + (mCenterX - mX) * radius / distance;
             mCenterY = mY + (mCenterY - mY) * radius / distance;
         }
+        mView.invalidate();
+    }
+
+    /**
+     * This method is called by ObjectAnimator to let the mask layer be transparent.
+     *
+     * @param alpha
+     */
+    public void setAlpha(int alpha) {
+        mFocusColor = computeFocusColor(mColor, alpha);
+        mCircleColor = computeCircleColor(mColor, alpha);
+        resetPaint();
         mView.invalidate();
     }
 }

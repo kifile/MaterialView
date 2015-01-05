@@ -1,22 +1,21 @@
 package com.kifile.demo.materialtextview;
 
 import android.app.Activity;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.RippleDrawable;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements View.OnClickListener {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.sample_material_text_view);
-        Drawable d = findViewById(R.id.drawable).getBackground();
-        RippleDrawable drawable;
-        d.toString();
+        findViewById(R.id.material).setOnClickListener(this);
+        findViewById(R.id.drawable).setOnClickListener(this);
     }
 
 
@@ -40,5 +39,10 @@ public class MainActivity extends Activity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onClick(View v) {
+        startActivity(new Intent(this, MainActivity.class));
     }
 }

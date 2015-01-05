@@ -4,7 +4,8 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <com.kifile.materialwidget.MaterialTextView
+    <com.kifile.demo.materialtextview.MaterialTextView
+        android:id="@+id/material"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:text="Text"
@@ -19,7 +20,7 @@
         android:clickable="true"
         android:background="?android:attr/selectableItemBackground"/>
 
-    <com.kifile.materialwidget.MaterialImageView
+    <com.kifile.demo.materialtextview.MaterialImageView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_weight="1"
