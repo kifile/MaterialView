@@ -15,3 +15,8 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+
+-keep class com.kifile.materialwidget.MaterialBackgroundDetector {
+    public void setRadius(...);
+    public void setAlpha(...);
+}

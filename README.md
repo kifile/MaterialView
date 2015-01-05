@@ -7,6 +7,8 @@ You can contact with we via email: **<kifile@kifile.com>**
 ![TextView](./1.gif)
 
 ![ImageView](./2.gif)
+##Dependence
+com.nineoldandroids:library:2.4.0
 ##How to use?
 ###1.Extends your target view.
 	public class MaterialImageView extends ImageView {
@@ -91,3 +93,10 @@ Then you shuould add these code:
     }
     
 You can see the example view named MaterialTextView and MaterialImageView in the app module for more details.
+
+##About proguard
+If you want to use proguard,  you should add these code in your proguard file:
+    -keep class com.kifile.materialwidget.MaterialBackgroundDetector {
+        public void setRadius(...);
+        public void setAlpha(...);
+    }
