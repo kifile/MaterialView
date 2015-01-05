@@ -12,7 +12,7 @@ import com.kifile.materialwidget.MaterialBackgroundDetector;
 /**
  * Created by kifile on 15-1-4.
  */
-public class MaterialImageView extends ImageView {
+public class MaterialImageView extends ImageView implements MaterialBackgroundDetector.Callback {
     private MaterialBackgroundDetector mDetector;
 
     public MaterialImageView(Context context) {
@@ -35,7 +35,7 @@ public class MaterialImageView extends ImageView {
                 attrs, com.kifile.materialwidget.R.styleable.MaterialTextView, defStyle, 0);
         int color = a.getColor(com.kifile.materialwidget.R.styleable.MaterialTextView_maskColor, MaterialBackgroundDetector.DEFAULT_COLOR);
         a.recycle();
-        mDetector = new MaterialBackgroundDetector(getContext(), this, color);
+        mDetector = new MaterialBackgroundDetector(getContext(), this, this, color);
     }
 
     @Override
@@ -63,4 +63,23 @@ public class MaterialImageView extends ImageView {
         mDetector.draw(canvas);
     }
 
+    @Override
+    public boolean performClick() {
+        return mDetector.handlePerformClick();
+    }
+
+    @Override
+    public boolean performLongClick() {
+        return mDetector.handlePerformLongClick();
+    }
+
+    @Override
+    public void performClickAfterAnimation() {
+        super.performClick();
+    }
+
+    @Override
+    public void performLongClickAfterAnimation() {
+        super.performLongClick();
+    }
 }

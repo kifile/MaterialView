@@ -32,7 +32,7 @@ import com.nineoldandroids.animation.Animator;
 import com.nineoldandroids.animation.ObjectAnimator;
 
 /**
- * The detector handle the touch event, and display a circle on your canvas.
+ * The detector handle the touch event, and display a circle mask on your canvas.
  * Created by kifile on 15-1-4.
  */
 public class MaterialBackgroundDetector {
@@ -47,17 +47,23 @@ public class MaterialBackgroundDetector {
     public static final int DEFAULT_COLOR = Color.BLACK;
 
     /*package*/ View mView;
+    /*package*/ Callback mCallback;
+
     private int mColor;
     private Paint mCirclePaint;
     private int mFocusColor;
     private int mCircleColor;
 
+    //The position of the initial circle center.
     private float mX;
     private float mY;
+    //The position of curr circle center.
     private float mCenterX;
     private float mCenterY;
     private float mViewRadius;
+    //The radius of curr circle.
     private float mRadius;
+    //The size of view.
     private int mWidth;
     private int mHeight;
     private int mMinPadding;
@@ -65,6 +71,9 @@ public class MaterialBackgroundDetector {
     private ObjectAnimator mAnimator;
     /*package*/ boolean mIsAnimation;
     private boolean mIsFocused;
+
+    private boolean mIsPerformClick;
+    private boolean mIsPerformLongClick;
 
     private Animator.AnimatorListener mAnimatorListener = new Animator.AnimatorListener() {
         @Override
@@ -91,8 +100,9 @@ public class MaterialBackgroundDetector {
 
     private Interpolator mInterpolator = new AccelerateDecelerateInterpolator();
 
-    public MaterialBackgroundDetector(Context context, View view, int color) {
+    public MaterialBackgroundDetector(Context context, View view, Callback callback, int color) {
         mView = view;
+        mCallback = callback;
         setColor(color);
         ViewConfiguration configuration = ViewConfiguration.get(context);
         mMinPadding = configuration.getScaledEdgeSlop();
@@ -140,6 +150,7 @@ public class MaterialBackgroundDetector {
             case MotionEvent.ACTION_DOWN:
                 mIsFocused = true;
                 if (!mIsAnimation) {
+                    //When the fingers touch the view, we let the mask appear slowly.
                     mX = event.getX();
                     mY = event.getY();
                     mAnimator = ObjectAnimator.ofFloat(this, "radius", mMinPadding, mViewRadius);
@@ -166,7 +177,7 @@ public class MaterialBackgroundDetector {
                 mRadius = Math.max(mRadius, mViewRadius * 0.1f);
                 int duration = (int) (DEFAULT_FAST_DURATION * (mViewRadius - mRadius) / mViewRadius);
                 if (duration > 0) {
-                    //If duration > 0, means the circle is not full the view.
+                    //When the fingers leave the view, if the mask doesn't cover whole view, we let the mask appear fast.
                     mAnimator = ObjectAnimator.ofFloat(this, "radius", mRadius, mViewRadius);
                     mAnimator.setDuration(duration);
                     mAnimator.setInterpolator(mInterpolator);
@@ -188,8 +199,23 @@ public class MaterialBackgroundDetector {
 
                     @Override
                     public void onAnimationEnd(Animator animation) {
+                        //When the animation end, we should do something.
                         mIsAnimation = false;
+                        //Reset the alpha value.
                         setAlpha(DEFAULT_ALPHA);
+                        //Handle the click event.
+                        if (mIsPerformClick) {
+                            if (mCallback != null) {
+                                mCallback.performClickAfterAnimation();
+                            }
+                            mIsPerformClick = false;
+                        }
+                        if (mIsPerformLongClick) {
+                            if (mCallback != null) {
+                                mCallback.performLongClickAfterAnimation();
+                            }
+                            mIsPerformLongClick = false;
+                        }
                     }
 
                     @Override
@@ -258,5 +284,44 @@ public class MaterialBackgroundDetector {
         mCircleColor = computeCircleColor(mColor, alpha);
         resetPaint();
         mView.invalidate();
+    }
+
+    /**
+     * It only happens when the fingers up.
+     * See also {@link #handlePerformLongClick()}
+     *
+     * @return whether it is been handled.
+     */
+    public boolean handlePerformClick() {
+        boolean result = mIsPerformClick;
+        mIsPerformClick = true;
+        return result;
+    }
+
+    /**
+     * It only happens when the fingers up.
+     * See also {@link #handlePerformClick()} ()}
+     *
+     * @return whether it is been handled.
+     */
+    public boolean handlePerformLongClick() {
+        boolean result = mIsPerformLongClick;
+        mIsPerformLongClick = true;
+        return result;
+    }
+
+    /**
+     * The Callback interface will call handle the click event after animation.
+     */
+    public interface Callback {
+        /**
+         * Handle click event after animation.
+         */
+        void performClickAfterAnimation();
+
+        /**
+         * Handle long click event after animation.
+         */
+        void performLongClickAfterAnimation();
     }
 }

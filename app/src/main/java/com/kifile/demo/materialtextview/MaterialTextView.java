@@ -11,9 +11,9 @@ import com.kifile.materialwidget.MaterialBackgroundDetector;
 
 
 /**
- * TODO: document your custom view class.
+ * The example for TextView.
  */
-public class MaterialTextView extends TextView {
+public class MaterialTextView extends TextView implements MaterialBackgroundDetector.Callback {
     private MaterialBackgroundDetector mDetector;
 
     public MaterialTextView(Context context) {
@@ -36,7 +36,7 @@ public class MaterialTextView extends TextView {
                 attrs, com.kifile.materialwidget.R.styleable.MaterialTextView, defStyle, 0);
         int color = a.getColor(com.kifile.materialwidget.R.styleable.MaterialTextView_maskColor, MaterialBackgroundDetector.DEFAULT_COLOR);
         a.recycle();
-        mDetector = new MaterialBackgroundDetector(getContext(), this, color);
+        mDetector = new MaterialBackgroundDetector(getContext(), this, this, color);
     }
 
     @Override
@@ -62,5 +62,38 @@ public class MaterialTextView extends TextView {
             return;
         }
         mDetector.draw(canvas);
+    }
+
+    /**
+     * When the view performClick, we should ensure the background animation appears.
+     * So we will handle the action in mDetector;
+     *
+     * @return
+     */
+    @Override
+    public boolean performClick() {
+        return mDetector.handlePerformClick();
+    }
+
+    /**
+     * When the view performClick, we should ensure the background animation appears.
+     * So we will handle the action in mDetector;
+     *
+     * @return
+     */
+    @Override
+    public boolean performLongClick() {
+        return mDetector.handlePerformLongClick();
+    }
+
+
+    @Override
+    public void performClickAfterAnimation() {
+        super.performClick();
+    }
+
+    @Override
+    public void performLongClickAfterAnimation() {
+        super.performLongClick();
     }
 }
