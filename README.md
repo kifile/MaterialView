@@ -96,6 +96,7 @@ You can see the example view named MaterialTextView and MaterialImageView in the
 
 ##About proguard
 If you want to use proguard,  you should add these code in your proguard file:
+
     -keep class com.kifile.materialwidget.MaterialBackgroundDetector {
         public void setRadius(...);
         public void setAlpha(...);
