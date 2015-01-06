@@ -37,7 +37,7 @@ import com.nineoldandroids.animation.ObjectAnimator;
  */
 public class MaterialBackgroundDetector {
     private static final String TAG = "MaterialBackgroundDetector";
-    private static final boolean DBG = true;
+    private static final boolean DBG = false;
 
     private static final int DEFAULT_DURATION = 1200;
     private static final int DEFAULT_FAST_DURATION = 300;
