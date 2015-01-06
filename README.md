@@ -7,9 +7,15 @@ You can contact with we via email: **<kifile@kifile.com>**
 ![TextView](./1.gif)
 
 ![ImageView](./2.gif)
-##Dependence
+##Dependences
 com.nineoldandroids:library:2.4.0
-##How to use?
+
+##Including In Your Project
+	dependencies {
+    	compile 'com.kifile:MaterialView:1.0'
+	}
+
+##How To Use
 ###1.Extends your target view.
 	public class MaterialImageView extends ImageView {
 		public MaterialImageView(Context context) {
