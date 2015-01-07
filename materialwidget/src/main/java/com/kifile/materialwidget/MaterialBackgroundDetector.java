@@ -70,6 +70,7 @@ public class MaterialBackgroundDetector {
 
     private ObjectAnimator mAnimator;
     /*package*/ boolean mIsAnimation;
+    /*package*/ boolean mHasDrawMask;
     private boolean mIsFocused;
 
     private boolean mIsPerformClick;
@@ -83,6 +84,7 @@ public class MaterialBackgroundDetector {
 
         @Override
         public void onAnimationEnd(Animator animation) {
+            mHasDrawMask = false;
             mIsAnimation = false;
             mView.invalidate();
         }
@@ -200,6 +202,7 @@ public class MaterialBackgroundDetector {
                     @Override
                     public void onAnimationEnd(Animator animation) {
                         //When the animation end, we should do something.
+                        mHasDrawMask = false;
                         mIsAnimation = false;
                         //Reset the alpha value.
                         setAlpha(DEFAULT_ALPHA);
@@ -247,6 +250,7 @@ public class MaterialBackgroundDetector {
             if (DBG) {
                 Log.d(TAG, "DrawFocusColor");
             }
+            mHasDrawMask = true;
             canvas.drawColor(mFocusColor);
             canvas.drawCircle(mCenterX, mCenterY, mRadius, mCirclePaint);
         }
@@ -271,7 +275,14 @@ public class MaterialBackgroundDetector {
             mCenterX = mX + (mCenterX - mX) * radius / distance;
             mCenterY = mY + (mCenterY - mY) * radius / distance;
         }
-        mView.invalidate();
+        if (mHasDrawMask) {
+            //If mask has been drawn, we could only invalidate the circle rect.
+            //To improve the efficiency.
+            mView.invalidate((int) (mCenterX - mRadius), (int) (mCenterY - mRadius),
+                    (int) (mCenterX + mRadius), (int) (mCenterY + mRadius));
+        } else {
+            mView.invalidate();
+        }
     }
 
     /**
