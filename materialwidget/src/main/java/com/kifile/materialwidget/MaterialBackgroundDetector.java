@@ -275,6 +275,7 @@ public class MaterialBackgroundDetector {
             mCenterX = mX + (mCenterX - mX) * radius / distance;
             mCenterY = mY + (mCenterY - mY) * radius / distance;
         }
+        mView.setWillNotDraw(false);
         if (mHasDrawMask) {
             //If mask has been drawn, we could only invalidate the circle rect.
             //To improve the efficiency.
@@ -294,6 +295,7 @@ public class MaterialBackgroundDetector {
         mFocusColor = computeFocusColor(mColor, alpha);
         mCircleColor = computeCircleColor(mColor, alpha);
         resetPaint();
+        mView.setWillNotDraw(false);
         mView.invalidate();
     }
 
