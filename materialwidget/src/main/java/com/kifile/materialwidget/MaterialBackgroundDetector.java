@@ -24,6 +24,7 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.ViewGroup;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.Interpolator;
@@ -70,8 +71,9 @@ public class MaterialBackgroundDetector {
 
     private ObjectAnimator mAnimator;
     /*package*/ boolean mIsAnimation;
+    /*package*/ boolean mIsCancelAnimation;
     /*package*/ boolean mHasDrawMask;
-    private boolean mIsFocused;
+    private boolean mIsPressed;
 
     private boolean mIsPerformClick;
     private boolean mIsPerformLongClick;
@@ -86,6 +88,30 @@ public class MaterialBackgroundDetector {
         public void onAnimationEnd(Animator animation) {
             mHasDrawMask = false;
             mIsAnimation = false;
+            mView.invalidate();
+        }
+
+        @Override
+        public void onAnimationCancel(Animator animation) {
+
+        }
+
+        @Override
+        public void onAnimationRepeat(Animator animation) {
+
+        }
+    };
+
+    private Animator.AnimatorListener mCancelAnimatorListener = new Animator.AnimatorListener() {
+        @Override
+        public void onAnimationStart(Animator animation) {
+            mIsCancelAnimation = true;
+        }
+
+        @Override
+        public void onAnimationEnd(Animator animation) {
+            mHasDrawMask = false;
+            mIsCancelAnimation = false;
             mView.invalidate();
         }
 
@@ -150,92 +176,142 @@ public class MaterialBackgroundDetector {
     public boolean onTouchEvent(MotionEvent event, boolean result) {
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
-                mIsFocused = true;
+                mIsPressed = true;
                 if (!mIsAnimation) {
-                    //When the fingers touch the view, we let the mask appear slowly.
-                    mX = event.getX();
-                    mY = event.getY();
-                    mAnimator = ObjectAnimator.ofFloat(this, "radius", mMinPadding, mViewRadius);
-                    int mDuration = DEFAULT_DURATION;
-                    mAnimator.setDuration(mDuration);
-                    mAnimator.setInterpolator(mInterpolator);
-                    mAnimator.addListener(mAnimatorListener);
-                    mAnimator.start();
-                    if (DBG) {
-                        Log.i(TAG, "Down,from:" + 0 + ",to:" + mViewRadius);
-                    }
+                    //Ensure there is only one shadow animation.
+                    startShadowAnimation(event);
                 }
                 // Ensure the following motion event can be received.
                 if (!result) {
                     result = true;
                 }
                 break;
+            case MotionEvent.ACTION_MOVE:
+                final float x = event.getX();
+                final float y = event.getY();
+                if (x >= 0 && x <= mWidth && y >= 0 && y <= mHeight) {
+                    moveShadowCenter(x, y);
+                } else {
+                    //When this figure move outside, we should cancel animation.
+                    cancelShadowAnimation();
+                }
+                break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
-                mIsFocused = false;
-                cancelAnimator();
-                mX = mCenterX;
-                mY = mCenterY;
-                mRadius = Math.max(mRadius, mViewRadius * 0.1f);
-                int duration = (int) (DEFAULT_FAST_DURATION * (mViewRadius - mRadius) / mViewRadius);
-                if (duration > 0) {
-                    //When the fingers leave the view, if the mask doesn't cover whole view, we let the mask appear fast.
-                    mAnimator = ObjectAnimator.ofFloat(this, "radius", mRadius, mViewRadius);
-                    mAnimator.setDuration(duration);
-                    mAnimator.setInterpolator(mInterpolator);
-                    mAnimator.addListener(mAnimatorListener);
-                    mAnimator.start();
-                    if (DBG) {
-                        Log.i(TAG, "UP,from:" + mRadius + ",to:" + mViewRadius);
-                    }
-                }
-                //we should let the mask layer disappear gradually.
-                ObjectAnimator alphaAnimator = ObjectAnimator.ofInt(this, "alpha", DEFAULT_ALPHA, 0);
-                alphaAnimator.setDuration(DEFAULT_TRANSPARENT_DURATION);
-                alphaAnimator.setInterpolator(new AccelerateInterpolator());
-                alphaAnimator.addListener(new Animator.AnimatorListener() {
-                    @Override
-                    public void onAnimationStart(Animator animation) {
-                        mIsAnimation = true;
-                    }
+                cancelShadowAnimation();
 
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        //When the animation end, we should do something.
-                        mHasDrawMask = false;
-                        mIsAnimation = false;
-                        //Reset the alpha value.
-                        setAlpha(DEFAULT_ALPHA);
-                        //Handle the click event.
-                        if (mIsPerformClick) {
-                            if (mCallback != null) {
-                                mCallback.performClickAfterAnimation();
-                            }
-                            mIsPerformClick = false;
-                        }
-                        if (mIsPerformLongClick) {
-                            if (mCallback != null) {
-                                mCallback.performLongClickAfterAnimation();
-                            }
-                            mIsPerformLongClick = false;
-                        }
-                    }
-
-                    @Override
-                    public void onAnimationCancel(Animator animation) {
-
-                    }
-
-                    @Override
-                    public void onAnimationRepeat(Animator animation) {
-
-                    }
-                });
-                alphaAnimator.start();
-                mView.invalidate();
                 break;
         }
         return result;
+    }
+
+
+    /**
+     *
+     */
+    private void startShadowAnimation(MotionEvent event) {
+        //When the fingers touch the view, we let the mask appear slowly.
+        mX = event.getX();
+        mY = event.getY();
+        mAnimator = ObjectAnimator.ofFloat(this, "radius", mMinPadding, mViewRadius);
+        int mDuration = DEFAULT_DURATION;
+        mAnimator.setDuration(mDuration);
+        mAnimator.setInterpolator(mInterpolator);
+        mAnimator.addListener(mAnimatorListener);
+        mAnimator.start();
+        if (DBG) {
+            Log.i(TAG, "Down,from:" + 0 + ",to:" + mViewRadius);
+        }
+    }
+
+    /**
+     *
+     */
+    private void cancelShadowAnimation() {
+        if (mIsCancelAnimation) {
+            return;
+        }
+        mIsPressed = false;
+        //Cancel the shadow animation before the fast cancel animation.
+        cancelAnimator();
+        mX = mCenterX;
+        mY = mCenterY;
+        mRadius = Math.max(mRadius, mViewRadius * 0.1f);
+        int duration = (int) (DEFAULT_FAST_DURATION * (mViewRadius - mRadius) / mViewRadius);
+        if (duration > 0) {
+            //When the fingers leave the view, if the mask doesn't cover whole view, we let the mask appear fast.
+            mAnimator = ObjectAnimator.ofFloat(this, "radius", mRadius, mViewRadius);
+            mAnimator.setDuration(duration);
+            mAnimator.setInterpolator(mInterpolator);
+            mAnimator.addListener(mCancelAnimatorListener);
+            mAnimator.start();
+            if (DBG) {
+                Log.i(TAG, "UP,from:" + mRadius + ",to:" + mViewRadius);
+            }
+        }
+        if (duration > 0) {
+            showAlphaAnimation();
+        }
+        mView.invalidate();
+    }
+
+    /**
+     * We should let the mask layer disappear gradually.
+     */
+    private void showAlphaAnimation() {
+        ObjectAnimator alphaAnimator = ObjectAnimator.ofInt(this, "alpha", DEFAULT_ALPHA, 0);
+        alphaAnimator.setDuration(DEFAULT_TRANSPARENT_DURATION);
+        alphaAnimator.setInterpolator(new AccelerateInterpolator());
+        alphaAnimator.addListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+                mIsAnimation = true;
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                //When the animation end, we should do something.
+                mHasDrawMask = false;
+                mIsAnimation = false;
+                //Reset the alpha value.
+                setAlpha(DEFAULT_ALPHA);
+                //Handle the click event.
+                if (mIsPerformClick) {
+                    if (mCallback != null) {
+                        mCallback.performClickAfterAnimation();
+                    }
+                    mIsPerformClick = false;
+                }
+                if (mIsPerformLongClick) {
+                    if (mCallback != null) {
+                        mCallback.performLongClickAfterAnimation();
+                    }
+                    mIsPerformLongClick = false;
+                }
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animation) {
+
+            }
+        });
+        alphaAnimator.start();
+    }
+
+    /**
+     * @param x
+     * @param y
+     */
+    private void moveShadowCenter(float x, float y) {
+        //When move, the shadow circle should be redraw.
+        mHasDrawMask = false;
+        mX = x;
+        mY = y;
     }
 
     public void cancelAnimator() {
@@ -245,7 +321,7 @@ public class MaterialBackgroundDetector {
     }
 
     public void draw(Canvas canvas) {
-        if (mIsFocused || mIsAnimation) {
+        if (mIsPressed || mIsAnimation || mIsCancelAnimation) {
             //If client is focused or in animation, show focus layer.
             if (DBG) {
                 Log.d(TAG, "DrawFocusColor");
@@ -275,7 +351,9 @@ public class MaterialBackgroundDetector {
             mCenterX = mX + (mCenterX - mX) * radius / distance;
             mCenterY = mY + (mCenterY - mY) * radius / distance;
         }
-        mView.setWillNotDraw(false);
+        if (mView instanceof ViewGroup) {
+            mView.setWillNotDraw(false);
+        }
         if (mHasDrawMask) {
             //If mask has been drawn, we could only invalidate the circle rect.
             //To improve the efficiency.
@@ -295,7 +373,9 @@ public class MaterialBackgroundDetector {
         mFocusColor = computeFocusColor(mColor, alpha);
         mCircleColor = computeCircleColor(mColor, alpha);
         resetPaint();
-        mView.setWillNotDraw(false);
+        if (mView instanceof ViewGroup) {
+            mView.setWillNotDraw(false);
+        }
         mView.invalidate();
     }
 
