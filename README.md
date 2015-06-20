@@ -1,5 +1,7 @@
 #MaterialView
 ##Introduce
+
+[![Join the chat at https://gitter.im/kifile/MaterialView](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/kifile/MaterialView?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 This project is build to let the view looks like a material design widget when touched.
 
 You can contact with we via email: **<kifile@kifile.com>**
